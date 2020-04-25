@@ -1,1 +1,1 @@
-# visint
+# Visual Interfaces Final Project
