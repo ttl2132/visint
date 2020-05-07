@@ -136,6 +136,7 @@ def webcamImageCapture():
     first = True
     fgbg = cv2.createBackgroundSubtractorMOG2()
     #This here is an opencv background removal thingy that seems to work better than the vibe thing
+
     while (True):
         # Capture frame-by-frame
         ret, frame = cap.read()
