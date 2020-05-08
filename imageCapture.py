@@ -4,6 +4,7 @@ from PIL import Image
 import numpy as np
 import random
 from numba import jit
+from .segmentation import decode_segmap, segment
 
 
 # from c_func import func1, func2
@@ -19,7 +20,7 @@ def func1(frame, N):
     samples = np.zeros((height, width, N, channel), np.int32)
     for i in range(height):
         for j in range(width):
-            #print(num)
+            # print(num)
             for k in range(N):
                 x_shift = random.randint(-1, 1)
                 y_shift = random.randint(-1, 1)
@@ -111,7 +112,7 @@ def videoImageCapture(filepath):
     fgbg = cv2.createBackgroundSubtractorMOG2()
 
     global samples
-    #v = Vibe()
+    # v = Vibe()
     first = True
     while cap.isOpened():
         ret, frame = cap.read()
@@ -122,8 +123,8 @@ def videoImageCapture(filepath):
         frame = cv2.resize(frame, dim, interpolation=cv2.INTER_AREA)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         fgmask = fgbg.apply(frame)
-
-        cv2.imshow("mask", fgmask)
+        res = cv2.bitwise_and(frame, frame, mask=fgmask)
+        cv2.imshow("mask", res)
         if cv2.waitKey(70) and 0xff == ord('q'):
             break
 
@@ -135,7 +136,7 @@ def webcamImageCapture():
     cap = cv2.VideoCapture(0)
     first = True
     fgbg = cv2.createBackgroundSubtractorMOG2()
-    #This here is an opencv background removal thingy that seems to work better than the vibe thing
+    # This here is an opencv background removal thingy that seems to work better than the vibe thing
 
     while (True):
         # Capture frame-by-frame
@@ -145,22 +146,31 @@ def webcamImageCapture():
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         fgmask = fgbg.apply(frame)
-
-        cv2.imshow("mask", fgmask)
-
+        #cnts = detectAndDraw(fgmask.copy())
+        res = cv2.bitwise_and(frame, frame, mask=fgmask)
+        cv2.imshow("mask", res)
+        detectAndDraw(res)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
+
 
     # When everything done, release the capture
     cap.release()
     cv2.destroyAllWindows()
 
+
 def detectAndDraw(im):
-    pass
+    im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
+    im2, contours, hierarchy = cv2.findContours(im, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    im2 = cv2.drawContours(im2, contours, -1, (0, 255, 0), 3)
+    cv2.imshow("im2", im2)
+    #cv2.waitKey()
+    return im2
+
 
 def main():
     webcamImageCapture()
-    #videoImageCapture("tester.mp4")
+    # videoImageCapture("tester.mp4")
     pass
 
 
