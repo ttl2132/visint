@@ -4,25 +4,12 @@ import PIL.Image as Image
 import numpy as np
 import matplotlib.pyplot as plt
 import torch
-
-fcn = models.segmentation.fcn_resnet101(pretrained=True).eval()
-img = Image.open('test.jpg')
-plt.imshow(img);
-plt.show()
 import torchvision.transforms as T
-
-trf = T.Compose([T.Resize(256), T.CenterCrop(224), T.ToTensor(),
-                 T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-inp = trf(img).unsqueeze(0)
-out = fcn(inp)['out']
-print(out.shape)
-om = torch.argmax(out.squeeze(), dim=0).detach().cpu().numpy()
-print (om.shape)
-print (np.unique(om))
+import cv2
 
 
 # Define the helper function
-def decode_segmap(image, nc=21):
+def decode_segmap(image, source, nc=21):
     label_colors = np.array([(0, 0, 0),  # 0=background
                              # 1=aeroplane, 2=bicycle, 3=bird, 4=boat, 5=bottle
                              (128, 0, 0), (0, 128, 0), (128, 128, 0), (0, 0, 128), (128, 0, 128),
@@ -44,28 +31,66 @@ def decode_segmap(image, nc=21):
         b[idx] = label_colors[l, 2]
 
     rgb = np.stack([r, g, b], axis=2)
-    return rgb
 
-print("Decode segmap_")
-rgb = decode_segmap(om)
-plt.imshow(rgb); plt.show()
+    # Load the foreground input image
+    foreground = cv2.imread(source)
 
-def segment(net, path):
-  img = Image.open(path)
-  plt.imshow(img); plt.axis('off'); plt.show()
-  # Comment the Resize and CenterCrop for better inference results
-  trf = T.Compose([T.Resize(256),
-                   T.CenterCrop(224),
-                   T.ToTensor(),
-                   T.Normalize(mean = [0.485, 0.456, 0.406],
-                               std = [0.229, 0.224, 0.225])])
-  inp = trf(img).unsqueeze(0)
-  out = net(inp)['out']
-  om = torch.argmax(out.squeeze(), dim=0).detach().cpu().numpy()
-  rgb = decode_segmap(om)
-  print("Second decode segmap")
-  plt.imshow(rgb); plt.axis('off');  plt.show()
+    # Change the color of foreground image to RGB
+    # and resize image to match shape of R-band in RGB output map
+    foreground = cv2.cvtColor(foreground, cv2.COLOR_BGR2RGB)
+    foreground = cv2.resize(foreground, (r.shape[1], r.shape[0]))
 
-segment(fcn, 'test.jpg')
+    # Create a background array to hold white pixels
+    # with the same size as RGB output map
+    background = 255 * np.ones_like(rgb).astype(np.uint8)
+
+    # Convert uint8 to float
+    foreground = foreground.astype(float)
+    background = background.astype(float)
+
+    # Create a binary mask of the RGB output map using the threshold value 0
+    th, alpha = cv2.threshold(np.array(rgb), 0, 255, cv2.THRESH_BINARY)
+
+    # Apply a slight blur to the mask to soften edges
+    alpha = cv2.GaussianBlur(alpha, (7, 7), 0)
+
+    # Normalize the alpha mask to keep intensity between 0 and 1
+    alpha = alpha.astype(float) / 255
+
+    # Multiply the foreground with the alpha matte
+    foreground = cv2.multiply(alpha, foreground)
+
+    # Multiply the background with ( 1 - alpha )
+    background = cv2.multiply(1.0 - alpha, background)
+
+    # Add the masked foreground and background
+    outImage = cv2.add(foreground, background)
+
+    # Return a normalized output image for display
+    return outImage / 255
 
 
+def segment(net, path, show_orig=True, dev='cuda'):
+    img = Image.open(path)
+    if show_orig: plt.imshow(img); plt.axis('off'); plt.show()
+    # Comment the Resize and CenterCrop for better inference results
+    trf = T.Compose([T.Resize(450),
+                     # T.CenterCrop(224),
+                     T.ToTensor(),
+                     T.Normalize(mean=[0.485, 0.456, 0.406],
+                                 std=[0.229, 0.224, 0.225])])
+    inp = trf(img).unsqueeze(0)
+    out = net(inp)['out']
+    om = torch.argmax(out.squeeze(), dim=0).detach().cpu().numpy()
+
+    rgb = decode_segmap(om, path)
+    newname = "new" + path
+    #plt.imshow(rgb);
+    #plt.axis('off');
+    #plt.show()
+    plt.imsave(newname, rgb)
+
+dlab = models.segmentation.deeplabv3_resnet101(pretrained=1).eval()
+
+segment(dlab, 'test.jpg')
+segment(dlab, 'test2.jpg')
