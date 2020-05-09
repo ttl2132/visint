@@ -1,11 +1,14 @@
+import math
 import cv2
 import PIL
 from PIL import Image
 import numpy as np
 import random
 from numba import jit
-from .segmentation import decode_segmap, segment
-
+from segmentation import segment
+from torchvision import models
+import os
+import multiprocessing
 
 # from c_func import func1, func2
 # index_dic = {1:(-1,-1),2:(-1,0),3:(-1,1),4:(0,-1),5:(0,0),6:(0,1),7:(1,-1),8:(1,0),9:(1,1)}
@@ -110,26 +113,35 @@ def videoImageCapture(filepath):
     cap = cv2.VideoCapture(filepath)
 
     fgbg = cv2.createBackgroundSubtractorMOG2()
-
     global samples
     # v = Vibe()
     first = True
+    framerate = cap.get(5)
     while cap.isOpened():
+        frameID = cap.get(1)
         ret, frame = cap.read()
         scalePercent = 1
-        width = int(frame.shape[1] * scalePercent)
-        height = int(frame.shape[0] * scalePercent)
-        dim = (width, height)
-        frame = cv2.resize(frame, dim, interpolation=cv2.INTER_AREA)
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        fgmask = fgbg.apply(frame)
-        res = cv2.bitwise_and(frame, frame, mask=fgmask)
-        cv2.imshow("mask", res)
+        if (frameID % math.floor(framerate)*30 == 0):
+            cv2.imshow("frame", frame)
+            p1 = multiprocessing.Process(target=removeBack(), args=[frame])
+            p1.start()
+            #cv2.imwrite("frame.jpg", frame)
+            #segment(dlab, "frame.jpg")
+            #cv2.imshow("segmented", cv2.imread("newframe.jpg"))
+            #if cv2.waitKey(70) and 0xff == ord('q'):
+            #    break
+        else:
+            cv2.imshow("frame", frame)
         if cv2.waitKey(70) and 0xff == ord('q'):
             break
 
     cap.release()
     cv2.destroyAllWindows()
+
+def removeBack(frame):
+    cv2.imwrite("frame.jpg", frame)
+    segment(dlab, "frame.jpg")
+    cv2.imshow("segmented", cv2.imread("newframe.jpg"))
 
 
 def webcamImageCapture():
@@ -167,10 +179,13 @@ def detectAndDraw(im):
     #cv2.waitKey()
     return im2
 
+dlab = None
 
 def main():
-    webcamImageCapture()
-    # videoImageCapture("tester.mp4")
+    global dlab
+    dlab = models.segmentation.deeplabv3_resnet101(pretrained=1).eval()
+    #webcamImageCapture()
+    videoImageCapture("tester.mp4")
     pass
 
 
