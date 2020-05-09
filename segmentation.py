@@ -6,11 +6,11 @@ import matplotlib.pyplot as plt
 import torch
 import torchvision.transforms as T
 import cv2
-from numba import jit
+#from numba import jit
 
 # Define the helper function
 scalePercent = .3
-@jit
+#@jit
 def decode_segmap(image, source, nc=21):
     label_colors = np.array([(0, 0, 0),  # 0=background
                              # 1=aeroplane, 2=bicycle, 3=bird, 4=boat, 5=bottle
@@ -31,7 +31,7 @@ def decode_segmap(image, source, nc=21):
         b[idx] = label_colors[l, 2]
     rgb = np.stack([r, g, b], axis=2)
     # Load the foreground input image
-    foreground = cv2.imread(source)
+    foreground = source
 
     # Change the color of foreground image to RGB
     # and resize image to match shape of R-band in RGB output map
@@ -59,13 +59,15 @@ def decode_segmap(image, source, nc=21):
     return outImage / 255
 
 #@jit
-def segment(net, path, show_orig=False, dev='cuda'):
-    img = Image.open(path)
+def segment(net, cvImg, show_orig=False, dev='cuda'):
+    cvImg = cv2.cvtColor(cvImg, cv2.COLOR_BGR2RGB)
+    img = Image.fromarray(cvImg)
     s = img.size
     width = int(s[0] * scalePercent)
     height = int(s[1] * scalePercent)
     dim = (width, height)
     img.resize(dim)
+    #img2.resize(dim)
     if show_orig: plt.imshow(img); plt.axis('off'); plt.show()
     # Comment the Resize and CenterCrop for better inference results
     trf = T.Compose([#T.Resize(450),
@@ -76,14 +78,19 @@ def segment(net, path, show_orig=False, dev='cuda'):
     inp = trf(img).unsqueeze(0)
     out = net(inp)['out']
     om = torch.argmax(out.squeeze(), dim=0).detach().cpu().numpy()
-    rgb = decode_segmap(om, path)
-    newname = "new" + path
-    # plt.imshow(rgb);
-    # plt.axis('off');
-    # plt.show()
-    plt.imsave(newname, rgb)
+    rgb = decode_segmap(om, cvImg)
+    newname = "frame.jpg"
+    r, g, b = cv2.split(rgb)
+    img_bgr = cv2.merge([r, g, b])
+    #print (type(rgb))
+    #plt.imshow(rgb);
+    #plt.axis('off');
+    #plt.show()
+    #print(rgb)
+    #plt.imsave(newname, rgb)
+    return img_bgr
 
-dlab = models.segmentation.deeplabv3_resnet101(pretrained=1).eval()
+#dlab = models.segmentation.deeplabv3_resnet101(pretrained=1).eval()
 
-segment(dlab, 'test.jpg')
-segment(dlab, 'test2.jpg')
+#segment(dlab, 'test.jpg')
+#segment(dlab, 'test2.jpg')
