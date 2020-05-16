@@ -16,33 +16,24 @@ frames = []
 
 def videoImageCapture(filepath):
     cap = cv2.VideoCapture(filepath)
-    #fgbg = cv2.createBackgroundSubtractorMOG2()
     global samples, frames
-    # v = Vibe()
-    first = True
+
     framerate = cap.get(5)
     print("Framerate: ", framerate)
-    index = 0
+    # Loops over all frames in the video
+
     while cap.isOpened():
         frameID = cap.get(1)
         ret, frame = cap.read()
-        #print(frame.shape)
+        # print(frame.shape)
         frame = cv2.resize(frame, (int(frame.shape[1]/4), int(frame.shape[0]/4)), interpolation = cv2.INTER_AREA)
-        scalePercent = 1
         if frameID % (math.floor(framerate)*3) == 0:
+            #Every 3ish seconds, get a frame to remove the background on
             print("if statement")
             cv2.imshow("frame", frame)
             removeBack(frame)
-            #frames.append(index)
-            #p1 = multiprocessing.Process(target=removeBack, args=[index])
-            #p1.start()
-
-            # cv2.imwrite("frame.jpg", frame)
-            # segment(dlab, "frame.jpg")
-            # cv2.imshow("segmented", cv2.imread("newframe.jpg"))
-            # if cv2.waitKey(70) and 0xff == ord('q'):
-            #    break
         else:
+            # Otherwise continue playing the video
             cv2.imshow("frame", frame)
         if cv2.waitKey(70) and 0xff == ord('q'):
             break
@@ -52,12 +43,11 @@ def videoImageCapture(filepath):
 
 
 def removeBack(frame):
-    #cv2.imwrite("frame.jpg", frame)
     im = segment(dlab, frame)
-    #im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
     cv2.imshow("segmented", im)
 
 
+#Haven't updated webcamImageCapture with background removal
 def webcamImageCapture():
     cap = cv2.VideoCapture(0)
     first = True
@@ -83,7 +73,7 @@ def webcamImageCapture():
     cap.release()
     cv2.destroyAllWindows()
 
-
+# A method intended to draw contours onto an image. Wasn't used
 def detectAndDraw(im):
     im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
     im2, contours, hierarchy = cv2.findContours(im, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -99,12 +89,10 @@ dlab = None
 def main():
     print("IT has begun")
     global dlab
-
+    # Initialization of semantig segmentation architecture
     dlab = models.segmentation.deeplabv3_resnet101(pretrained=1).eval()
     print("Model created")
-    # webcamImageCapture()
     videoImageCapture("testvid2.mp4")
-    pass
 
 
 if __name__ == "__main__":
