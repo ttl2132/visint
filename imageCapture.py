@@ -27,7 +27,7 @@ def videoImageCapture(filepath):
         if frame is None:
             print("Finished")
             break
-        frame = cv2.resize(frame, (160,90), interpolation=cv2.INTER_AREA)
+        frame = cv2.resize(frame, (320,180), interpolation=cv2.INTER_AREA)
         if frameID % (math.floor(framerate) * 3) == 0:
             # Every 3ish seconds, get a frame to remove the background on
             print("if statement")
