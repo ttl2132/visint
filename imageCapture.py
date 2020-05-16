@@ -33,6 +33,7 @@ def videoImageCapture(filepath):
             print("if statement")
         #   cv2.imshow("frame", frame)
             frames.append(segment(dlab, frame))
+
         # Since there is no longer a display aspect, it simply continues
         #else:
         # Otherwise continue playing the video
