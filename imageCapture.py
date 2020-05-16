@@ -1,53 +1,52 @@
 import math
 import cv2
-#import PIL
-#from PIL import Image
-#import numpy as np
-#import random
-#from numba import jit
+# import PIL
+# from PIL import Image
+# import numpy as np
+# import random
+# from numba import jit
 from segmentation import segment
 from torchvision import models
-#import os
+# import os
 import multiprocessing
 
-
-frames = []
-
+dlab = models.segmentation.deeplabv3_resnet101(pretrained=1).eval()
 
 def videoImageCapture(filepath):
     cap = cv2.VideoCapture(filepath)
-    global samples, frames
+
+    # This will store all images with their backgrounds removed
+    frames = []
 
     framerate = cap.get(5)
     print("Framerate: ", framerate)
     # Loops over all frames in the video
-
     while cap.isOpened():
         frameID = cap.get(1)
         ret, frame = cap.read()
-        # print(frame.shape)
-        frame = cv2.resize(frame, (int(frame.shape[1]/4), int(frame.shape[0]/4)), interpolation = cv2.INTER_AREA)
-        if frameID % (math.floor(framerate)*3) == 0:
-            #Every 3ish seconds, get a frame to remove the background on
-            print("if statement")
-            cv2.imshow("frame", frame)
-            removeBack(frame)
-        else:
-            # Otherwise continue playing the video
-            cv2.imshow("frame", frame)
-        if cv2.waitKey(70) and 0xff == ord('q'):
+        if frame is None:
+            print("Finished")
             break
+        frame = cv2.resize(frame, (160,90), interpolation=cv2.INTER_AREA)
+        if frameID % (math.floor(framerate) * 3) == 0:
+            # Every 3ish seconds, get a frame to remove the background on
+            print("if statement")
+        #   cv2.imshow("frame", frame)
+            frames.append(segment(dlab, frame))
+        # Since there is no longer a display aspect, it simply continues
+        #else:
+        # Otherwise continue playing the video
+        #    cv2.imshow("frame", frame)
+        #    if cv2.waitKey(70) and 0xff == ord('q'):
+        #        break
 
     cap.release()
     cv2.destroyAllWindows()
+    return frames
 
 
-def removeBack(frame):
-    im = segment(dlab, frame)
-    cv2.imshow("segmented", im)
 
-
-#Haven't updated webcamImageCapture with background removal
+# Haven't updated webcamImageCapture with background removal
 def webcamImageCapture():
     cap = cv2.VideoCapture(0)
     first = True
@@ -83,14 +82,9 @@ def detectAndDraw(im):
     return im2
 
 
-dlab = None
-
-
 def main():
     print("IT has begun")
-    global dlab
     # Initialization of semantig segmentation architecture
-    dlab = models.segmentation.deeplabv3_resnet101(pretrained=1).eval()
     print("Model created")
     videoImageCapture("testvid2.mp4")
 
