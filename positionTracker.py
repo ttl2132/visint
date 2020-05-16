@@ -3,11 +3,13 @@ import cv2
 import imutils
 from imutils import face_utils
 import dlib
+import math
 
 """
 The xml files for the Haar cascade classifiers are sourced from the OpenCV library at:
 https://github.com/opencv/opencv/tree/master/data/haarcascades
 """
+
 
 def subtract_background(img):
     x, y, z = np.shape(img)
@@ -29,6 +31,7 @@ def subtract_body(img):
                     img[l][w][color] = 0
     return img
 
+
 def find_pupil(img, ex, ey, ew, eh, imgName):
     cropped_img = img[ex: ex + ew, ey: ey + eh]
     imgray = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2GRAY)
@@ -45,7 +48,7 @@ def find_pupil(img, ex, ey, ew, eh, imgName):
     show_image(img, imgName)
 
 
-def find_front_face(img, imgName, findEyes=False):
+def is_front_facing(img, imgName, findEyes=False):
     imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     face = front_face_cascade.detectMultiScale(imgray, 1.3, 5)
     for (x, y, w, h) in face:
@@ -61,7 +64,7 @@ def find_front_face(img, imgName, findEyes=False):
     return len(face) > 0
 
 
-def find_side_face(img, imgName):
+def is_side_facing(img, imgName):
     imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     face = side_face_cascade.detectMultiScale(imgray, 1.3, 5)
     for (x, y, w, h) in face:
@@ -84,6 +87,17 @@ def convert_rect_values(rect):
     return x, y, w, h
 
 
+def calculate_distance(pt, pt2):
+    x1, y1 = pt[0], pt[1]
+    x2, y2 = pt2[0], pt2[1]
+    return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
+def eye_aspect_ratio(eye):
+    left_vertical = calculate_distance(eye[1], eye[5])
+    right_vertical = calculate_distance(eye[2], eye[4])
+    horizontal = calculate_distance(eye[0], eye[3])
+    return (left_vertical + right_vertical) / (2.0 * horizontal)
+
 def shape_to_np(shape):
     # initialize the list of (x, y)-coordinates
     converted = np.zeros((68, 2))
@@ -94,7 +108,25 @@ def shape_to_np(shape):
     # return the list of (x, y)-coordinates
     return converted
 
-""" Some code sourced from the following tutorial:
+#The eye parameter is given as a the pupil's bounding corners clockwise starting from the top left.
+def pupil_area_percentage(img, imgName, eye):
+    x, y, w, h = eye[0][0], eye[0][1], eye[2][0]-eye[0][0], eye[2][0]-eye[0][0]
+    cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
+    imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    show_image(img, imgName)
+    white_count = 0
+    pupil_count = 0
+    #This is the parameter for how dark the pixel needs to be for it to count as part of the pupil.
+    color_limit = 100
+    for row in range(w):
+        for col in range(h):
+            if imgray[x+row][y+col] > color_limit:
+                white_count+=1
+            else:
+                pupil_count+=1
+    return pupil_count / (white_count+ pupil_count)
+
+""" Some code is sourced from the following tutorial:
 https://www.pyimagesearch.com/2017/04/03/facial-landmarks-dlib-opencv-python/
 """
 def dlibs_predict(img, imgName):
@@ -104,29 +136,38 @@ def dlibs_predict(img, imgName):
     rects = detector(imgray, 1)
     # loop over the face detections
     for (i, rect) in enumerate(rects):
-        # determine the facial landmarks for the face region, then
-        # convert the facial landmark (x, y)-coordinates to a NumPy
-        # array
         shape = predictor(imgray, rect)
         shape = face_utils.shape_to_np(shape)
-        # convert dlib's rectangle to a OpenCV-style bounding box
-        # [i.e., (x, y, w, h)], then draw the face bounding box
-        (x, y, w, h) = face_utils.rect_to_bb(rect)
+        x, y, w, h = face_utils.rect_to_bb(rect)
         cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        # show the face number
-        cv2.putText(img, "Face #{}".format(i + 1), (x - 10, y - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-        # loop over the (x, y)-coordinates for the facial landmarks
-        # and draw them on the image
         for (x, y) in shape:
             cv2.circle(img, (x, y), 1, (0, 0, 255), -1)
+        #This parameter is tested.
+        closedEyeLimit = 0.15
+        lStart, lEnd = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
+        rStart, rEnd = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
+        leftEye = shape[lStart:lEnd]
+        rightEye = shape[rStart:rEnd]
+        leftEyeHull = cv2.convexHull(leftEye)
+        rightEyeHull = cv2.convexHull(rightEye)
+        cv2.drawContours(img, [leftEyeHull], -1, (0, 255, 0), 1)
+        cv2.drawContours(img, [rightEyeHull], -1, (0, 255, 0), 1)
+        leftPupil = np.array([shape[lStart+1], shape[lStart+2], shape[lStart+4], shape[lStart+5]])
+        rightPupil = np.array([shape[rStart + 1], shape[rStart + 2], shape[rStart + 4], shape[rStart + 5]])
+        if eye_aspect_ratio(leftEye) < closedEyeLimit and eye_aspect_ratio(rightEye) < closedEyeLimit:
+            print("Eyes are closed")
+        elif pupil_area_percentage(img, imgName, leftPupil) < 0.1 or pupil_area_percentage(img, imgName, rightPupil) < 0.1:
+            print("Eyes are looking sideways")
+        else:
+            print("Eyes are looking forward")
     show_image(img, imgName)
+
 
 front_face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 eye_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
 side_face_cascade = cv2.CascadeClassifier('haarcascade_profileface.xml')
 
-testImages = ["Fed.jpg", "tian_side_eye.dng", "tian_closed_eye.dng", "newtest.jpg", "side_tian.jpg", "bry.jpg"]
+testImages = ["newtest.jpg", "Fed.jpg", "tian_side_eye.dng", "tian_closed_eye.dng", "side_tian.jpg", "bry.jpg"]
 
 for name in testImages:
     image = cv2.imread(name)
@@ -136,11 +177,8 @@ for name in testImages:
     if y > 1000:
         image = imutils.resize(image, height=1000)
     dlibs_predict(image, name)
-    print("Head pose is facing to the side: " + str(find_side_face(image, name)))
-
+    print("Head pose is facing to the side: " + str(is_side_facing(image, name)))
 """
 image = subtractBody(image)
 image2 = subtractBody(image2)
-makeContour(image, testImage)
-makeContour(image2, testImage2)
 """
