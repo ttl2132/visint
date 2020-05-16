@@ -21,17 +21,6 @@ def subtract_background(img):
     return img
 
 
-def subtract_body(img):
-    x, y, z = np.shape(img)
-    for l in range(x):
-        for w in range(y):
-            avg = sum(img[l][w]) / 3
-            if img[l][w][2] < avg - 3:
-                for color in range(z):
-                    img[l][w][color] = 0
-    return img
-
-
 def find_pupil(img, ex, ey, ew, eh, imgName):
     cropped_img = img[ex: ex + ew, ey: ey + eh]
     imgray = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2GRAY)
@@ -155,11 +144,11 @@ def dlibs_predict(img, imgName):
         leftPupil = np.array([shape[lStart+1], shape[lStart+2], shape[lStart+4], shape[lStart+5]])
         rightPupil = np.array([shape[rStart + 1], shape[rStart + 2], shape[rStart + 4], shape[rStart + 5]])
         if eye_aspect_ratio(leftEye) < closedEyeLimit and eye_aspect_ratio(rightEye) < closedEyeLimit:
-            print("Eyes are closed")
+            return "closed"
         elif pupil_area_percentage(img, imgName, leftPupil) < 0.1 or pupil_area_percentage(img, imgName, rightPupil) < 0.1:
-            print("Eyes are looking sideways")
+            return "looking sideways"
         else:
-            print("Eyes are looking forward")
+            return "looking forward"
     show_image(img, imgName)
 
 
@@ -167,7 +156,7 @@ front_face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml'
 eye_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
 side_face_cascade = cv2.CascadeClassifier('haarcascade_profileface.xml')
 
-testImages = ["newtest.jpg", "Fed.jpg", "tian_side_eye.dng", "tian_closed_eye.dng", "side_tian.jpg", "bry.jpg"]
+testImages = ["front_tian.jpg", "newtest.jpg", "Fed.jpg", "tian_side_eye.dng", "tian_closed_eye.dng", "side_tian.jpg", "bry.jpg"]
 
 for name in testImages:
     image = cv2.imread(name)
@@ -176,9 +165,18 @@ for name in testImages:
         image = imutils.resize(image, width=1800)
     if y > 1000:
         image = imutils.resize(image, height=1000)
-    dlibs_predict(image, name)
-    print("Head pose is facing to the side: " + str(is_side_facing(image, name)))
-"""
-image = subtractBody(image)
-image2 = subtractBody(image2)
-"""
+    eye_pos = dlibs_predict(image, name)
+    if is_side_facing(image, name):
+        print("Head is facing to the side.")
+        print("Eyes are " + eye_pos + ".")
+        if eye_pos == "closed" or eye_pos == "looking forward":
+            print("The user is not paying attention.")
+        else:
+            print("The user is paying attention.")
+    elif is_front_facing(image, name):
+        print("Head is front-facing.")
+        print("Eyes are " + eye_pos + ".")
+        if eye_pos == "closed" or eye_pos == "looking sideways":
+            print("The user is not paying attention.")
+        else:
+            print("The user is paying attention.")
