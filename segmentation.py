@@ -80,7 +80,8 @@ def segment(net, cvImg, show_orig=False, dev='cuda'):
     rgb = decode_segmap(om, cvImg)
     newname = "frame.jpg"
     r, g, b = cv2.split(rgb)
-    img_bgr = cv2.merge([r, g, b])
 
-    return img_bgr
+    img_bgr = cv2.merge([r, g, b]) * 255
+
+    return img_bgr.astype(int)
 
