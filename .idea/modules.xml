@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/../VisualInt1/.idea/VisualInt1.iml" filepath="$PROJECT_DIR$/../VisualInt1/.idea/VisualInt1.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../ass2/.idea/ass2.iml" filepath="$PROJECT_DIR$/../ass2/.idea/ass2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../ass3/.idea/ass3.iml" filepath="$PROJECT_DIR$/../ass3/.idea/ass3.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/visint.iml" filepath="$PROJECT_DIR$/.idea/visint.iml" />
+    </modules>
+  </component>
+</project>
