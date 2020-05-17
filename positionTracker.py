@@ -5,6 +5,7 @@ from imutils import face_utils
 import dlib
 import math
 from imageCapture import videoImageCapture
+from user_test import user_test
 
 """
 The xml files for the Haar cascade classifiers are sourced from the OpenCV library at:
@@ -163,7 +164,8 @@ side_face_cascade = cv2.CascadeClassifier('haarcascade_profileface.xml')
 
 testImages = ["front_tian.jpg", "newtest.jpg", "Fed.jpg", "tian_side_eye.dng", "tian_closed_eye.dng", "side_tian.jpg",
               "bry.jpg"]
-
+array = []
+user = [1, 1, 1, 0, 1, 1, 1, 1, 0, 1] #values based on test images
 image = cv2.imread(testImages[0])
 frames = videoImageCapture("tester.mp4")
 
@@ -175,8 +177,10 @@ for name in testImages:
         image = imutils.resize(image, width=1800)
     if y > 1000:
         image = imutils.resize(image, height=1000)"""
-
+i = 0
 for each in frames:
+    #print(i)
+    i+=1
     image = each.astype(np.uint8)
     name = "frame"
     eye_pos = dlibs_predict(image, name)
@@ -186,12 +190,19 @@ for each in frames:
         print("Eyes are " + eye_pos + ".")
         if eye_pos == "closed" or eye_pos == "looking forward":
             print("The user is not paying attention.")
+            array.append(0)
         else:
             print("The user is paying attention.")
+            array.append(1)
     elif is_front_facing(image, name):
         print("Head is front-facing.")
         print("Eyes are " + eye_pos + ".")
         if eye_pos == "closed" or eye_pos == "looking sideways":
             print("The user is not paying attention.")
+            array.append(0)
         else:
             print("The user is paying attention.")
+            array.append(1)
+    else:
+        array.append(0)
+user_test(user,array)

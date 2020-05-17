@@ -15,22 +15,21 @@ dlab = models.segmentation.deeplabv3_resnet101(pretrained=1).eval()
 def videoImageCapture(filepath):
     cap = cv2.VideoCapture(filepath)
 
-    # This will store all images with their backgrounds removed
     frames = []
 
     framerate = cap.get(5)
-    print("Framerate: ", framerate)
+    #print("Framerate: ", framerate)
     # Loops over all frames in the video
     while cap.isOpened():
         frameID = cap.get(1)
         ret, frame = cap.read()
         if frame is None:
-            print("Finished")
+            #print("Finished")
             break
-        frame = cv2.resize(frame, (320,180), interpolation=cv2.INTER_AREA)
+        #frame = cv2.resize(frame, (320,180), interpolation=cv2.INTER_AREA)
         if frameID % (math.floor(framerate) * 3) == 0:
             # Every 3ish seconds, get a frame to remove the background on
-            print("if statement")
+            #print("if statement")
         #   cv2.imshow("frame", frame)
             frames.append(segment(dlab, frame))
 
