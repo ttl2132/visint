@@ -7,6 +7,8 @@
 
 def user_test(user, array):
     #amount person is deemed to be focused
+    print(len(user))
+    print(len(array))
     focused = 0
     unfocused = 0
     for i in array:
