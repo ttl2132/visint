@@ -4,6 +4,7 @@ import imutils
 from imutils import face_utils
 import dlib
 import math
+from user_test import user_test
 
 """
 The xml files for the Haar cascade classifiers are sourced from the OpenCV library at:
@@ -157,6 +158,8 @@ eye_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
 side_face_cascade = cv2.CascadeClassifier('haarcascade_profileface.xml')
 
 testImages = ["front_tian.jpg", "newtest.jpg", "Fed.jpg", "tian_side_eye.dng", "tian_closed_eye.dng", "side_tian.jpg", "bry.jpg"]
+array = []
+user = [1, 1, 1, 1, 0, 0, 1] #values based on test images
 
 for name in testImages:
     image = cv2.imread(name)
@@ -171,12 +174,18 @@ for name in testImages:
         print("Eyes are " + eye_pos + ".")
         if eye_pos == "closed" or eye_pos == "looking forward":
             print("The user is not paying attention.")
+            array.append(0)
         else:
             print("The user is paying attention.")
+            array.append(1)
     elif is_front_facing(image, name):
         print("Head is front-facing.")
         print("Eyes are " + eye_pos + ".")
         if eye_pos == "closed" or eye_pos == "looking sideways":
             print("The user is not paying attention.")
+            array.append(0)
         else:
             print("The user is paying attention.")
+            array.append(1)
+
+user_test(user,array)
