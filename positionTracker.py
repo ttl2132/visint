@@ -4,6 +4,7 @@ import imutils
 from imutils import face_utils
 import dlib
 import math
+from imageCapture import videoImageCapture
 
 """
 The xml files for the Haar cascade classifiers are sourced from the OpenCV library at:
@@ -47,8 +48,6 @@ def is_front_facing(img, imgName, findEyes=False):
             cv2.rectangle(img[y:y + h, x:x + w], (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
             if findEyes:
                 find_pupil(img, x + ex, y + ey, ew, eh, imgName)
-                # matchOpenEye(img[ex:ex + ew, ey:ey + eh], imgName)
-                # matchClosedEye(img[ex:ex + ew, ey:ey + eh], imgName)
     show_image(img, imgName)
     return len(face) > 0
 
@@ -63,7 +62,7 @@ def is_side_facing(img, imgName):
 
 
 def show_image(img, imgName):
-    cv2.imshow(name, image)
+    cv2.imshow(imgName, img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
@@ -81,11 +80,13 @@ def calculate_distance(pt, pt2):
     x2, y2 = pt2[0], pt2[1]
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
+
 def eye_aspect_ratio(eye):
     left_vertical = calculate_distance(eye[1], eye[5])
     right_vertical = calculate_distance(eye[2], eye[4])
     horizontal = calculate_distance(eye[0], eye[3])
     return (left_vertical + right_vertical) / (2.0 * horizontal)
+
 
 def shape_to_np(shape):
     # initialize the list of (x, y)-coordinates
@@ -97,27 +98,30 @@ def shape_to_np(shape):
     # return the list of (x, y)-coordinates
     return converted
 
-#The eye parameter is given as a the pupil's bounding corners clockwise starting from the top left.
+
+# The eye parameter is given as a the pupil's bounding corners clockwise starting from the top left.
 def pupil_area_percentage(img, imgName, eye):
-    x, y, w, h = eye[0][0], eye[0][1], eye[2][0]-eye[0][0], eye[2][0]-eye[0][0]
+    x, y, w, h = eye[0][0], eye[0][1], eye[2][0] - eye[0][0], eye[2][0] - eye[0][0]
     cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
     imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    show_image(img, imgName)
     white_count = 0
     pupil_count = 0
-    #This is the parameter for how dark the pixel needs to be for it to count as part of the pupil.
-    color_limit = 100
+    # This is the parameter for how dark the pixel needs to be for it to count as part of the pupil.
+    color_limit = 160
     for row in range(w):
         for col in range(h):
-            if imgray[x+row][y+col] > color_limit:
-                white_count+=1
+            if imgray[y + row][x + col] > color_limit:
+                white_count += 1
             else:
-                pupil_count+=1
-    return pupil_count / (white_count+ pupil_count)
+                pupil_count += 1
+    return pupil_count / (white_count + pupil_count)
+
 
 """ Some code is sourced from the following tutorial:
 https://www.pyimagesearch.com/2017/04/03/facial-landmarks-dlib-opencv-python/
 """
+
+
 def dlibs_predict(img, imgName):
     predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
     imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -128,11 +132,11 @@ def dlibs_predict(img, imgName):
         shape = predictor(imgray, rect)
         shape = face_utils.shape_to_np(shape)
         x, y, w, h = face_utils.rect_to_bb(rect)
-        cv2.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
         for (x, y) in shape:
             cv2.circle(img, (x, y), 1, (0, 0, 255), -1)
-        #This parameter is tested.
-        closedEyeLimit = 0.15
+        # This parameter is tested.
+        closedEyeLimit = 0.12
+        pupilAreaMin = 0.7
         lStart, lEnd = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
         rStart, rEnd = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
         leftEye = shape[lStart:lEnd]
@@ -141,32 +145,43 @@ def dlibs_predict(img, imgName):
         rightEyeHull = cv2.convexHull(rightEye)
         cv2.drawContours(img, [leftEyeHull], -1, (0, 255, 0), 1)
         cv2.drawContours(img, [rightEyeHull], -1, (0, 255, 0), 1)
-        leftPupil = np.array([shape[lStart+1], shape[lStart+2], shape[lStart+4], shape[lStart+5]])
+        leftPupil = np.array([shape[lStart + 1], shape[lStart + 2], shape[lStart + 4], shape[lStart + 5]])
         rightPupil = np.array([shape[rStart + 1], shape[rStart + 2], shape[rStart + 4], shape[rStart + 5]])
-        if eye_aspect_ratio(leftEye) < closedEyeLimit and eye_aspect_ratio(rightEye) < closedEyeLimit:
+        show_image(img, imgName)
+        if eye_aspect_ratio(leftEye) < closedEyeLimit or eye_aspect_ratio(rightEye) < closedEyeLimit:
             return "closed"
-        elif pupil_area_percentage(img, imgName, leftPupil) < 0.1 or pupil_area_percentage(img, imgName, rightPupil) < 0.1:
+        elif pupil_area_percentage(img, imgName, leftPupil) < pupilAreaMin and \
+                pupil_area_percentage(img, imgName, rightPupil) < pupilAreaMin:
             return "looking sideways"
         else:
             return "looking forward"
-    show_image(img, imgName)
 
 
 front_face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
 eye_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
 side_face_cascade = cv2.CascadeClassifier('haarcascade_profileface.xml')
 
-testImages = ["front_tian.jpg", "newtest.jpg", "Fed.jpg", "tian_side_eye.dng", "tian_closed_eye.dng", "side_tian.jpg", "bry.jpg"]
+testImages = ["front_tian.jpg", "newtest.jpg", "Fed.jpg", "tian_side_eye.dng", "tian_closed_eye.dng", "side_tian.jpg",
+              "bry.jpg"]
 
+image = cv2.imread(testImages[0])
+frames = videoImageCapture("tester.mp4")
+
+""" Using testImages
 for name in testImages:
     image = cv2.imread(name)
     x, y, z = np.shape(image)
     if x > 2000:
         image = imutils.resize(image, width=1800)
     if y > 1000:
-        image = imutils.resize(image, height=1000)
+        image = imutils.resize(image, height=1000)"""
+
+for each in frames:
+    image = each.astype(np.uint8)
+    name = "frame"
     eye_pos = dlibs_predict(image, name)
-    if is_side_facing(image, name):
+    print(eye_pos)
+    if is_side_facing(image, "frame.jpg"):
         print("Head is facing to the side.")
         print("Eyes are " + eye_pos + ".")
         if eye_pos == "closed" or eye_pos == "looking forward":
