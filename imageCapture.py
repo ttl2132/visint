@@ -18,13 +18,13 @@ def videoImageCapture(filepath):
     frames = []
 
     framerate = cap.get(5)
-    print("Framerate: ", framerate)
+    #print("Framerate: ", framerate)
     # Loops over all frames in the video
     while cap.isOpened():
         frameID = cap.get(1)
         ret, frame = cap.read()
         if frame is None:
-            print("Finished")
+            #print("Finished")
             break
         #frame = cv2.resize(frame, (320,180), interpolation=cv2.INTER_AREA)
         if frameID % (math.floor(framerate) * 3) == 0:

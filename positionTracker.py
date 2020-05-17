@@ -179,7 +179,7 @@ for name in testImages:
         image = imutils.resize(image, height=1000)"""
 i = 0
 for each in frames:
-    print(i)
+    #print(i)
     i+=1
     image = each.astype(np.uint8)
     name = "frame"
