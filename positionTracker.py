@@ -10,9 +10,12 @@ from user_test import user_test
 """
 The xml files for the Haar cascade classifiers are sourced from the OpenCV library at:
 https://github.com/opencv/opencv/tree/master/data/haarcascades
+Some of the code is sourced from the following tutorial:
+https://www.pyimagesearch.com/2017/04/03/facial-landmarks-dlib-opencv-python/
 """
 
-
+# Changes the white background to black. This was used for an alternate, face contour tracking
+# idea that ended up not being used.
 def subtract_background(img):
     x, y, z = np.shape(img)
     for l in range(x):
@@ -22,7 +25,8 @@ def subtract_background(img):
                     img[l][w][color] = 0
     return img
 
-
+# This was meant to find the pupils after locating the general area of the eyes, but it
+# was not used.
 def find_pupil(img, ex, ey, ew, eh, imgName):
     cropped_img = img[ex: ex + ew, ey: ey + eh]
     imgray = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2GRAY)
@@ -36,9 +40,8 @@ def find_pupil(img, ex, ey, ew, eh, imgName):
         for values in circles:
             a, b, r = values[0], values[1], values[2]
             cv2.circle(img, (ex + a, ey + b), r, (0, 255, 0), 2)
-    show_image(img, imgName)
 
-
+# Determines if the user is front-facing with Haar Cascade.
 def is_front_facing(img, imgName, findEyes=False):
     imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     face = front_face_cascade.detectMultiScale(imgray, 1.3, 5)
@@ -49,25 +52,23 @@ def is_front_facing(img, imgName, findEyes=False):
             cv2.rectangle(img[y:y + h, x:x + w], (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
             if findEyes:
                 find_pupil(img, x + ex, y + ey, ew, eh, imgName)
-    show_image(img, imgName)
     return len(face) > 0
 
-
+# Determines if the user is side-facing with Haar Cascade.
 def is_side_facing(img, imgName):
     imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     face = side_face_cascade.detectMultiScale(imgray, 1.3, 5)
     for (x, y, w, h) in face:
         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
-    show_image(img, imgName)
     return len(face) > 0
 
-
+# Shows the image
 def show_image(img, imgName):
     cv2.imshow(imgName, img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
-
+# Takes the coordinates of the rectangle and converts them to match the input for cv2 rectangles
 def convert_rect_values(rect):
     x = rect.left()
     y = rect.top()
@@ -75,20 +76,20 @@ def convert_rect_values(rect):
     h = rect.bottom() - y
     return x, y, w, h
 
-
+# Calculates distance.
 def calculate_distance(pt, pt2):
     x1, y1 = pt[0], pt[1]
     x2, y2 = pt2[0], pt2[1]
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
-
+# Calculates the eye aspect ratio.
 def eye_aspect_ratio(eye):
     left_vertical = calculate_distance(eye[1], eye[5])
     right_vertical = calculate_distance(eye[2], eye[4])
     horizontal = calculate_distance(eye[0], eye[3])
     return (left_vertical + right_vertical) / (2.0 * horizontal)
 
-
+# Converts the shape retrieved from the face_utils library to a friendly numpy form.
 def shape_to_np(shape):
     # initialize the list of (x, y)-coordinates
     converted = np.zeros((68, 2))
@@ -108,7 +109,7 @@ def pupil_area_percentage(img, imgName, eye):
     white_count = 0
     pupil_count = 0
     # This is the parameter for how dark the pixel needs to be for it to count as part of the pupil.
-    color_limit = 160
+    color_limit = 140
     for row in range(w):
         for col in range(h):
             if imgray[y + row][x + col] > color_limit:
@@ -117,12 +118,10 @@ def pupil_area_percentage(img, imgName, eye):
                 pupil_count += 1
     return pupil_count / (white_count + pupil_count)
 
-
-""" Some code is sourced from the following tutorial:
-https://www.pyimagesearch.com/2017/04/03/facial-landmarks-dlib-opencv-python/
-"""
-
-
+# This is where the most defined face detection occurs. The function takes an image and marks out
+# a face with 68 specific template points as trained in the iBUG 300-W 300 faces in the wild challenge:
+# https://ibug.doc.ic.ac.uk/resources/facial-point-annotations/
+# It then bounds the eyes and determines the pupil location.
 def dlibs_predict(img, imgName):
     predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
     imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -137,7 +136,7 @@ def dlibs_predict(img, imgName):
             cv2.circle(img, (x, y), 1, (0, 0, 255), -1)
         # This parameter is tested.
         closedEyeLimit = 0.12
-        pupilAreaMin = 0.7
+        pupilAreaMin = 0.8
         lStart, lEnd = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
         rStart, rEnd = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
         leftEye = shape[lStart:lEnd]
@@ -151,7 +150,7 @@ def dlibs_predict(img, imgName):
         show_image(img, imgName)
         if eye_aspect_ratio(leftEye) < closedEyeLimit or eye_aspect_ratio(rightEye) < closedEyeLimit:
             return "closed"
-        elif pupil_area_percentage(img, imgName, leftPupil) < pupilAreaMin and \
+        elif pupil_area_percentage(img, imgName, leftPupil) < pupilAreaMin or \
                 pupil_area_percentage(img, imgName, rightPupil) < pupilAreaMin:
             return "looking sideways"
         else:
@@ -162,21 +161,36 @@ front_face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml'
 eye_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
 side_face_cascade = cv2.CascadeClassifier('haarcascade_profileface.xml')
 
+""" Using testImages
 testImages = ["front_tian.jpg", "newtest.jpg", "Fed.jpg", "tian_side_eye.dng", "tian_closed_eye.dng", "side_tian.jpg",
               "bry.jpg"]
-array = []
-user = [1, 1, 1, 0, 1, 1, 1, 1, 0, 1] #values based on test images
-image = cv2.imread(testImages[0])
-frames = videoImageCapture("testsVid3.mp4")
-
-""" Using testImages
 for name in testImages:
     image = cv2.imread(name)
     x, y, z = np.shape(image)
     if x > 2000:
         image = imutils.resize(image, width=1800)
     if y > 1000:
-        image = imutils.resize(image, height=1000)"""
+        image = imutils.resize(image, height=1000)
+    eye_pos = dlibs_predict(image, name)
+    print(eye_pos)
+    if is_side_facing(image, "frame.jpg"):
+        print("Head is facing to the side.")
+        print("Eyes are " + eye_pos + ".")
+        if eye_pos == "closed" or eye_pos == "looking forward":
+            print("The user is not paying attention.")
+        else:
+            print("The user is paying attention.")
+    elif is_front_facing(image, name):
+        print("Head is front-facing.")
+        print("Eyes are " + eye_pos + ".")
+        if eye_pos == "closed" or eye_pos == "looking sideways":
+            print("The user is not paying attention.")
+        else:
+            print("The user is paying attention.")
+"""
+array = []
+user = [1, 0, 1, 0, 1, 1, 1, 1, 0, 1] #values based on test images
+frames = videoImageCapture("tester.mp4")
 i = 0
 for each in frames:
     #print(i)
@@ -205,4 +219,4 @@ for each in frames:
             array.append(1)
     else:
         array.append(0)
-#user_test(user,array)
+user_test(user,array)
