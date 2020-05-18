@@ -167,7 +167,7 @@ testImages = ["front_tian.jpg", "newtest.jpg", "Fed.jpg", "tian_side_eye.dng", "
 array = []
 user = [1, 1, 1, 0, 1, 1, 1, 1, 0, 1] #values based on test images
 image = cv2.imread(testImages[0])
-frames = videoImageCapture("tester.mp4")
+frames = videoImageCapture("testsVid3.mp4")
 
 """ Using testImages
 for name in testImages:
@@ -205,4 +205,4 @@ for each in frames:
             array.append(1)
     else:
         array.append(0)
-user_test(user,array)
+#user_test(user,array)
