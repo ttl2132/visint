@@ -40,7 +40,6 @@ def find_pupil(img, ex, ey, ew, eh, imgName):
         for values in circles:
             a, b, r = values[0], values[1], values[2]
             cv2.circle(img, (ex + a, ey + b), r, (0, 255, 0), 2)
-    show_image(img, imgName)
 
 # Determines if the user is front-facing with Haar Cascade.
 def is_front_facing(img, imgName, findEyes=False):
@@ -53,7 +52,6 @@ def is_front_facing(img, imgName, findEyes=False):
             cv2.rectangle(img[y:y + h, x:x + w], (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
             if findEyes:
                 find_pupil(img, x + ex, y + ey, ew, eh, imgName)
-    show_image(img, imgName)
     return len(face) > 0
 
 # Determines if the user is side-facing with Haar Cascade.
@@ -62,7 +60,6 @@ def is_side_facing(img, imgName):
     face = side_face_cascade.detectMultiScale(imgray, 1.3, 5)
     for (x, y, w, h) in face:
         cv2.rectangle(img, (x, y), (x + w, y + h), (0, 0, 255), 2)
-    show_image(img, imgName)
     return len(face) > 0
 
 # Shows the image
@@ -112,7 +109,7 @@ def pupil_area_percentage(img, imgName, eye):
     white_count = 0
     pupil_count = 0
     # This is the parameter for how dark the pixel needs to be for it to count as part of the pupil.
-    color_limit = 160
+    color_limit = 140
     for row in range(w):
         for col in range(h):
             if imgray[y + row][x + col] > color_limit:
@@ -139,7 +136,7 @@ def dlibs_predict(img, imgName):
             cv2.circle(img, (x, y), 1, (0, 0, 255), -1)
         # This parameter is tested.
         closedEyeLimit = 0.12
-        pupilAreaMin = 0.7
+        pupilAreaMin = 0.8
         lStart, lEnd = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
         rStart, rEnd = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
         leftEye = shape[lStart:lEnd]
@@ -153,7 +150,7 @@ def dlibs_predict(img, imgName):
         show_image(img, imgName)
         if eye_aspect_ratio(leftEye) < closedEyeLimit or eye_aspect_ratio(rightEye) < closedEyeLimit:
             return "closed"
-        elif pupil_area_percentage(img, imgName, leftPupil) < pupilAreaMin and \
+        elif pupil_area_percentage(img, imgName, leftPupil) < pupilAreaMin or \
                 pupil_area_percentage(img, imgName, rightPupil) < pupilAreaMin:
             return "looking sideways"
         else:
@@ -164,10 +161,9 @@ front_face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml'
 eye_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
 side_face_cascade = cv2.CascadeClassifier('haarcascade_profileface.xml')
 
+""" Using testImages
 testImages = ["front_tian.jpg", "newtest.jpg", "Fed.jpg", "tian_side_eye.dng", "tian_closed_eye.dng", "side_tian.jpg",
               "bry.jpg"]
-
-""" Using testImages
 for name in testImages:
     image = cv2.imread(name)
     x, y, z = np.shape(image)
@@ -193,7 +189,7 @@ for name in testImages:
             print("The user is paying attention.")
 """
 array = []
-user = [1, 1, 1, 0, 1, 1, 1, 1, 0, 1] #values based on test images
+user = [1, 0, 1, 0, 1, 1, 1, 1, 0, 1] #values based on test images
 frames = videoImageCapture("tester.mp4")
 i = 0
 for each in frames:
