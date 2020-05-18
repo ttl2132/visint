@@ -12,7 +12,7 @@
 #user = [1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0]
 #array = [] #whatever is outputted in positionTracker
 
-def user_test(user, array):
+def userTest(user, array):
     #amount person is deemed to be focused
     #print(len(user))
     #print(len(array))
@@ -47,4 +47,4 @@ def user_test(user, array):
     print("accuracy of program output: ", accuracy)
 
 #if __name__ == "__main__":
-#    user_test(user,array)
+#    userTest(user,array)

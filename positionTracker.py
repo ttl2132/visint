@@ -5,12 +5,12 @@ from imutils import face_utils
 import dlib
 import math
 from imageCapture import videoImageCapture
-from user_test import user_test
+from userTest import userTest
 
 """
 The xml files for the Haar cascade classifiers are sourced from the OpenCV library at:
 https://github.com/opencv/opencv/tree/master/data/haarcascades
-Some of the code in the dlibs_predict function is sourced from the following tutorial:
+Some of the code in the dlibsPredict function is sourced from the following tutorial:
 https://www.pyimagesearch.com/2017/04/03/facial-landmarks-dlib-opencv-python/
 
 Both of these can be used, because they are both explicitly open-source.
@@ -23,7 +23,7 @@ its accuracy through user_test.py.
 
 # Changes the white background to black. This was used for an alternate, face contour tracking
 # idea that ended up not being used.
-def subtract_background(img):
+def subtractBackground(img):
     x, y, z = np.shape(img)
     for l in range(x):
         for w in range(y):
@@ -34,7 +34,7 @@ def subtract_background(img):
 
 # This was meant to find the pupils after locating the general area of the eyes, but it
 # was not used.
-def find_pupil(img, ex, ey, ew, eh, imgName):
+def findPupil(img, ex, ey, ew, eh, imgName):
     cropped_img = img[ex: ex + ew, ey: ey + eh]
     imgray = cv2.cvtColor(cropped_img, cv2.COLOR_BGR2GRAY)
     # Apply Hough transform on the blurred image.
@@ -49,7 +49,7 @@ def find_pupil(img, ex, ey, ew, eh, imgName):
             cv2.circle(img, (ex + a, ey + b), r, (0, 255, 0), 2)
 
 # Determines if the user is front-facing with Haar Cascade.
-def is_front_facing(img, imgName, findEyes=False):
+def isFrontFacing(img, imgName, findEyes=False):
     imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     face = front_face_cascade.detectMultiScale(imgray, 1.3, 5)
     for (x, y, w, h) in face:
@@ -58,11 +58,11 @@ def is_front_facing(img, imgName, findEyes=False):
         for (ex, ey, ew, eh) in eyes:
             cv2.rectangle(img[y:y + h, x:x + w], (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
             if findEyes:
-                find_pupil(img, x + ex, y + ey, ew, eh, imgName)
+                findPupil(img, x + ex, y + ey, ew, eh, imgName)
     return len(face) > 0
 
 # Determines if the user is side-facing with Haar Cascade.
-def is_side_facing(img, imgName):
+def isSideFacing(img, imgName):
     imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     face = side_face_cascade.detectMultiScale(imgray, 1.3, 5)
     for (x, y, w, h) in face:
@@ -70,13 +70,13 @@ def is_side_facing(img, imgName):
     return len(face) > 0
 
 # Shows the image
-def show_image(img, imgName):
+def showImage(img, imgName):
     cv2.imshow(imgName, img)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
 # Takes the coordinates of the rectangle and converts them to match the input for cv2 rectangles
-def convert_rect_values(rect):
+def convertRectValues(rect):
     x = rect.left()
     y = rect.top()
     w = rect.right() - x
@@ -84,20 +84,20 @@ def convert_rect_values(rect):
     return x, y, w, h
 
 # Calculates distance.
-def calculate_distance(pt, pt2):
+def calculateDistance(pt, pt2):
     x1, y1 = pt[0], pt[1]
     x2, y2 = pt2[0], pt2[1]
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
 # Calculates the eye aspect ratio.
-def eye_aspect_ratio(eye):
-    left_vertical = calculate_distance(eye[1], eye[5])
-    right_vertical = calculate_distance(eye[2], eye[4])
-    horizontal = calculate_distance(eye[0], eye[3])
+def eyeAspectRatio(eye):
+    left_vertical = calculateDistance(eye[1], eye[5])
+    right_vertical = calculateDistance(eye[2], eye[4])
+    horizontal = calculateDistance(eye[0], eye[3])
     return (left_vertical + right_vertical) / (2.0 * horizontal)
 
 # Converts the shape retrieved from the face_utils library to a friendly numpy form.
-def shape_to_np(shape):
+def shapeToNP(shape):
     # initialize the list of (x, y)-coordinates
     converted = np.zeros((68, 2))
     # loop over the 68 facial landmarks and convert them
@@ -109,7 +109,7 @@ def shape_to_np(shape):
 
 
 # The eye parameter is given as a the pupil's bounding corners clockwise starting from the top left.
-def pupil_area_percentage(img, imgName, eye):
+def pupilAreaPercentage(img, imgName, eye):
     x, y, w, h = eye[0][0], eye[0][1], eye[2][0] - eye[0][0], eye[2][0] - eye[0][0]
     cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 2)
     imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -129,7 +129,7 @@ def pupil_area_percentage(img, imgName, eye):
 # a face with 68 specific template points as trained in the iBUG 300-W 300 faces in the wild challenge:
 # https://ibug.doc.ic.ac.uk/resources/facial-point-annotations/
 # It then bounds the eyes and determines the pupil location.
-def dlibs_predict(img, imgName):
+def dlibsPredict(img, imgName):
     predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
     imgray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     detector = dlib.get_frontal_face_detector()
@@ -154,10 +154,10 @@ def dlibs_predict(img, imgName):
         cv2.drawContours(img, [rightEyeHull], -1, (0, 255, 0), 1)
         leftPupil = np.array([shape[lStart + 1], shape[lStart + 2], shape[lStart + 4], shape[lStart + 5]])
         rightPupil = np.array([shape[rStart + 1], shape[rStart + 2], shape[rStart + 4], shape[rStart + 5]])
-        if eye_aspect_ratio(leftEye) < closedEyeLimit or eye_aspect_ratio(rightEye) < closedEyeLimit:
+        if eyeAspectRatio(leftEye) < closedEyeLimit or eyeAspectRatio(rightEye) < closedEyeLimit:
             return "closed"
-        elif pupil_area_percentage(img, imgName, leftPupil) < pupilAreaMin or \
-                pupil_area_percentage(img, imgName, rightPupil) < pupilAreaMin:
+        elif pupilAreaPercentage(img, imgName, leftPupil) < pupilAreaMin or \
+                pupilAreaPercentage(img, imgName, rightPupil) < pupilAreaMin:
             return "looking sideways"
         else:
             return "looking forward"
@@ -181,9 +181,9 @@ for name in testImages:
         image = imutils.resize(image, width=1800)
     if y > 1000:
         image = imutils.resize(image, height=1000)
-    eye_pos = dlibs_predict(image, name)
+    eye_pos = dlibsPredict(image, name)
     print(eye_pos)
-    if is_side_facing(image, "frame.jpg"):
+    if isSideFacing(image, "frame.jpg"):
         print("Head is facing to the side.")
         print("Eyes are " + eye_pos + ".")
         if eye_pos == "closed" or eye_pos == "looking forward":
@@ -192,7 +192,7 @@ for name in testImages:
         else:
             print("The user is paying attention.")
             test_array.append(1)
-    elif is_front_facing(image, name):
+    elif isFrontFacing(image, name):
         print("Head is front-facing.")
         print("Eyes are " + eye_pos + ".")
         if eye_pos == "closed" or eye_pos == "looking sideways":
@@ -203,7 +203,7 @@ for name in testImages:
             test_array.append(1)
     else:
         test_array.append(0)
-user_test(test, test_array)
+userTest(test, test_array)
 
 array = []
 user = [1, 0, 1, 0, 1, 1, 1, 1, 0, 1] #values based on test images
@@ -214,9 +214,9 @@ for each in frames:
     i+=1
     image = each.astype(np.uint8)
     name = "frame"
-    eye_pos = dlibs_predict(image, name)
+    eye_pos = dlibsPredict(image, name)
     print(eye_pos)
-    if is_side_facing(image, "frame.jpg"):
+    if isSideFacing(image, "frame.jpg"):
         print("Head is facing to the side.")
         print("Eyes are " + eye_pos + ".")
         if eye_pos == "closed" or eye_pos == "looking forward":
@@ -225,7 +225,7 @@ for each in frames:
         else:
             print("The user is paying attention.")
             array.append(1)
-    elif is_front_facing(image, name):
+    elif isFrontFacing(image, name):
         print("Head is front-facing.")
         print("Eyes are " + eye_pos + ".")
         if eye_pos == "closed" or eye_pos == "looking sideways":
@@ -236,4 +236,4 @@ for each in frames:
             array.append(1)
     else:
         array.append(0)
-user_test(user, array)
+userTest(user, array)

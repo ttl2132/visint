@@ -10,7 +10,7 @@ import cv2
 
 scalePercent = .3
 #@jit
-def decode_segmap(image, source, nc=21):
+def decodeSegmap(image, source, nc=21):
     label_colors = np.array([(0, 0, 0),  # 0=background
                              # 1=aeroplane, 2=bicycle, 3=bird, 4=boat, 5=bottle
                              (128, 0, 0), (0, 128, 0), (128, 128, 0), (0, 0, 128), (128, 0, 128),
@@ -77,7 +77,7 @@ def segment(net, cvImg, show_orig=False, dev='cuda'):
     inp = trf(img).unsqueeze(0)
     out = net(inp)['out']
     om = torch.argmax(out.squeeze(), dim=0).detach().cpu().numpy()
-    rgb = decode_segmap(om, cvImg)
+    rgb = decodeSegmap(om, cvImg)
     newname = "frame.jpg"
     r, g, b = cv2.split(rgb)
 
