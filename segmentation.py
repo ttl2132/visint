@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import torch
 import torchvision.transforms as T
 import cv2
-#from numba import jit
+#from numba import
 
 scalePercent = .3
 #@jit
