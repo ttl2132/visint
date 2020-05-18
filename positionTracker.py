@@ -10,8 +10,15 @@ from user_test import user_test
 """
 The xml files for the Haar cascade classifiers are sourced from the OpenCV library at:
 https://github.com/opencv/opencv/tree/master/data/haarcascades
-Some of the code is sourced from the following tutorial:
+Some of the code in the dlibs_predict function is sourced from the following tutorial:
 https://www.pyimagesearch.com/2017/04/03/facial-landmarks-dlib-opencv-python/
+
+Both of these can be used, because they are both explicitly open-source.
+
+This program takes in the images from imageCapture.py, and detects head pose, whether the eye is open or closed, and
+pupil tracking. It then takes that information to determine whether the individual is paying attention, then determines
+its accuracy through user_test.py.
+
 """
 
 # Changes the white background to black. This was used for an alternate, face contour tracking
@@ -160,7 +167,7 @@ front_face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml'
 eye_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
 side_face_cascade = cv2.CascadeClassifier('haarcascade_profileface.xml')
 
-""" Using testImages"""
+""" Using testImages: This was used as a sanity check before expanding the project to include video processing."""
 test_array = []
 test = [1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0]
 i = 0
