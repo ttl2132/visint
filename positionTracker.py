@@ -147,7 +147,6 @@ def dlibs_predict(img, imgName):
         cv2.drawContours(img, [rightEyeHull], -1, (0, 255, 0), 1)
         leftPupil = np.array([shape[lStart + 1], shape[lStart + 2], shape[lStart + 4], shape[lStart + 5]])
         rightPupil = np.array([shape[rStart + 1], shape[rStart + 2], shape[rStart + 4], shape[rStart + 5]])
-        show_image(img, imgName)
         if eye_aspect_ratio(leftEye) < closedEyeLimit or eye_aspect_ratio(rightEye) < closedEyeLimit:
             return "closed"
         elif pupil_area_percentage(img, imgName, leftPupil) < pupilAreaMin or \
@@ -161,10 +160,14 @@ front_face_cascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml'
 eye_cascade = cv2.CascadeClassifier('haarcascade_eye.xml')
 side_face_cascade = cv2.CascadeClassifier('haarcascade_profileface.xml')
 
-""" Using testImages
+""" Using testImages"""
+test_array = []
+test = [1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0]
+i = 0
 testImages = ["front_tian.jpg", "newtest.jpg", "Fed.jpg", "tian_side_eye.dng", "tian_closed_eye.dng", "side_tian.jpg",
-              "bry.jpg"]
+              "bry.jpg", "bgfront_open.jpg", "fedEyesClosed.jpg", "fedEyesClosed2.jpg", "fed1.jpg", "fed2.jpg"]
 for name in testImages:
+    i += 1
     image = cv2.imread(name)
     x, y, z = np.shape(image)
     if x > 2000:
@@ -178,16 +181,23 @@ for name in testImages:
         print("Eyes are " + eye_pos + ".")
         if eye_pos == "closed" or eye_pos == "looking forward":
             print("The user is not paying attention.")
+            test_array.append(0)
         else:
             print("The user is paying attention.")
+            test_array.append(1)
     elif is_front_facing(image, name):
         print("Head is front-facing.")
         print("Eyes are " + eye_pos + ".")
         if eye_pos == "closed" or eye_pos == "looking sideways":
             print("The user is not paying attention.")
+            test_array.append(0)
         else:
             print("The user is paying attention.")
-"""
+            test_array.append(1)
+    else:
+        test_array.append(0)
+user_test(test, test_array)
+
 array = []
 user = [1, 0, 1, 0, 1, 1, 1, 1, 0, 1] #values based on test images
 frames = videoImageCapture("tester.mp4")
@@ -219,4 +229,4 @@ for each in frames:
             array.append(1)
     else:
         array.append(0)
-user_test(user,array)
+user_test(user, array)
