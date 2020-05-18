@@ -1,8 +1,15 @@
+"""
+    This class takes the results from positionTracker.py and determines how often the individuals are paying attention
+    according to the program. It then takes the difference between what the user believes is paying attention and what
+    the program believes is paying attention, then determines the overall accuracy of the program.
+"""
+#Used for initial testing for sanity check
 #user = [1,1,1,0,0]
 #array = [1,1,0,0,1]
-#testImages = ["front_tian.jpg", "newtest.jpg", "Fed.jpg", "tian_side_eye.dng", "tian_closed_eye.dng", "side_tian.jpg", "bry.jpg"]
+#testImages = testImages = ["front_tian.jpg", "newtest.jpg", "Fed.jpg", "tian_side_eye.dng", "tian_closed_eye.dng", "side_tian.jpg",
+#              "bry.jpg", "bgfront_open.jpg", "fedEyesClosed.jpg", "fedEyesClosed2.jpg", "fed1.jpg", "fed2.jpg"]
 
-#user = [1, 1, 1, 1, 0, 0, 1]
+#user = [1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0]
 #array = [] #whatever is outputted in positionTracker
 
 def user_test(user, array):

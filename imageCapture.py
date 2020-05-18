@@ -84,7 +84,7 @@ def detectAndDraw(im):
 
 def main():
     print("IT has begun")
-    # Initialization of semantig segmentation architecture
+    # Initialization of semantic segmentation architecture
     print("Model created")
     videoImageCapture("testvid2.mp4")
 
